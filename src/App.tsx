@@ -1,25 +1,75 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { FC, useState, useCallback, useEffect } from 'react';
+import { Carousel, Text, Box } from 'grommet';
+import axios from 'axios';
+import Theme from './theme';
+import Layout from './components/Layout';
+import Container from './components/Container';
+import CardMovie from './components/CardMovie';
+import LoadedSpinner from './components/LoadedSpinner';
 
-function App() {
+const urlRequest = 'http://localhost:8000';
+
+interface Movie {
+  id: number;
+  imdbID?: string;
+  Title: string;
+  Year: string;
+  Type: string;
+  Poster: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+const App: FC = () => {
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<boolean>(false);
+
+  const getMovies = useCallback( async () => {
+    try {
+      setLoading(true);
+      const movies = await axios.get(`${urlRequest}/movies`);
+      if (movies.status === 200) {
+        setLoading(false);
+        setMovies(movies.data);
+      } else {
+        setError(true);
+        setLoading(false);
+      }
+    } catch (error) {
+      setError(true);
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    getMovies();
+  }, [getMovies])
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Theme darkMode>
+      <Layout>
+        <Container>
+          {loading && <LoadedSpinner size={'large'}/>}
+          {error && <Text tag={'span'} size={'small'}>Some error happened, Try again :(</Text>}
+          <Box align={'center'} pad={'large'}>
+          <Carousel>
+            { 
+              movies.map(movie => 
+                <CardMovie
+                  key={movie.id}
+                  title={movie.Title}
+                  image={movie.Poster}
+                  year={Number(movie.Year)}
+                  type={movie.Type}
+                />  
+              )
+            }
+          </Carousel>
+          </Box>
+        </Container>
+      </Layout>
+    </Theme>
   );
 }
 
